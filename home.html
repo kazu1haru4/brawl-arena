@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><meta name="theme-color" content="#11132b"><title>BRAWL ARENA | ホーム</title><link rel="stylesheet" href="css/style.css"></head>
+<body><div class="app-shell">
+<header class="topbar"><a class="brand" href="home.html">✦ BRAWL ARENA</a><div class="top-actions"><span id="playerLabel" class="pill">プレイヤー</span><button id="logoutBtn" class="ghost">ログアウト</button></div></header>
+<main class="home-main">
+<section class="welcome card"><div><p class="eyebrow">LOBBY</p><h1>ようこそ、<span id="welcomeName">プレイヤー</span>！</h1><p class="muted">フレンドを集めて、チームでアリーナへ出撃しよう。</p></div><div class="orb hero-orb"></div></section>
+<div class="home-grid">
+<section class="card"><h2>👥 フレンド</h2><p class="muted">IDを入力してフレンド候補に追加しよう（この試作では同じブラウザ内のみ）。</p><form id="friendForm" class="inline-form"><input id="friendId" placeholder="フレンドのプレイヤーID" maxlength="18" required><button class="secondary" type="submit">追加</button></form><p id="friendMessage" class="message"></p><ul id="friendList" class="friend-list"></ul></section>
+<section class="card"><h2>🧑‍🚀 ファイター</h2><div class="fighter-row"><div class="orb"></div><div><h3>テレポーター</h3><span class="tag">エピック</span><p class="muted">ポータルと引き寄せガジェットを使うファイター。</p></div></div><button id="selectFighter" class="secondary full">テレポーターを選択 ✓</button></section>
+<section class="card team-card"><h2>⚔️ チーム</h2><p class="muted">現在のチーム：<b id="teamCount">1 / 3</b></p><div id="teamMembers" class="team-members"><span class="member">● <span id="teamSelf">あなた</span></span></div><p class="fineprint">オンライン招待はまだ未接続。フレンド機能は画面の動作確認用です。</p><button id="playBtn" class="primary full">▶ 試合に出撃</button></section></div>
+</main></div><script src="js/home.js"></script></body></html>
