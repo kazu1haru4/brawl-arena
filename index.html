@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#101a2a">
+<title>BRAWL ARENA - Prototype</title>
+<style>
+:root{--bg:#101a2a;--panel:#192941;--line:#385273;--text:#f4f8ff;--accent:#ffd34d}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;touch-action:none}
+button{font:700 15px system-ui;border:2px solid #526b8c;border-radius:14px;padding:11px 14px;color:white;background:#263d5b}
+button:active{transform:scale(.97)}
+#app{height:100dvh;display:flex;flex-direction:column;max-width:900px;margin:auto}
+header{height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;background:#0b1320;border-bottom:1px solid #30435c}
+.logo{font-weight:1000;letter-spacing:1px;color:var(--accent)} .small{font-size:12px;color:#b8c9df}
+#menu{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:16px}
+h1{font-size:clamp(26px,6vw,42px);line-height:1.05;margin:0}
+h2{font-size:20px;margin:0 0 8px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:15px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#coins{font-weight:900;color:var(--accent)}
+.characters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.char{min-width:0;background:#142238;border:2px solid #385273;border-radius:16px;padding:12px;text-align:left}
+.char.selected{border-color:var(--accent);box-shadow:0 0 0 2px #ffd34d33}
+.avatar{height:62px;width:62px;border-radius:18px;display:grid;place-items:center;font-size:34px;margin-bottom:8px;border:2px solid #ffffff44}
+.char strong{display:block}.char small{display:block;color:#b9cce2;margin-top:3px}
+.primary{background:#ffcc42;color:#172033;border-color:#fff0a3;font-size:18px;padding:15px}
+#game{display:none;flex:1;position:relative;min-height:0;background:#203b34}
+canvas{width:100%;height:100%;display:block}
+.hud{position:absolute;left:10px;right:10px;top:8px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;gap:8px}
+.hudbox{background:#101a2add;border:1px solid #ffffff35;border-radius:12px;padding:7px 10px;font-size:12px}
+#healthbar{height:8px;width:110px;background:#3d2530;border-radius:9px;overflow:hidden;margin-top:4px}
+#healthfill{height:100%;width:100%;background:#5ee38c}
+#controls{position:absolute;inset:auto 0 0;display:flex;justify-content:space-between;align-items:end;padding:14px;pointer-events:none}
+#stickArea{width:130px;height:130px;border-radius:50%;background:#c7d9f022;border:2px solid #ffffff35;position:relative;pointer-events:auto;touch-action:none}
+#stick{position:absolute;width:54px;height:54px;left:36px;top:36px;border-radius:50%;background:#dceaffaa;border:2px solid #fff}
+.actions{display:flex;gap:10px;align-items:end;pointer-events:auto}
+.action{border-radius:50%;width:68px;height:68px;padding:0;display:grid;place-items:center;background:#d94d5d;border:3px solid #ffc0c5;font-size:12px;box-shadow:0 5px 0 #7d2938}
+#super{width:78px;height:78px;background:#8e5de7;border-color:#d7c4ff;box-shadow:0 5px 0 #4b3186}
+#super:disabled{filter:grayscale(1);opacity:.55}
+#toast{position:absolute;top:35%;left:50%;transform:translate(-50%,-50%);background:#101a2aee;padding:12px 18px;border-radius:14px;font-weight:900;display:none;text-align:center}
+#gameover{position:absolute;inset:0;background:#0a1420cc;display:none;align-items:center;justify-content:center;padding:20px}
+#gameover .panel{text-align:center;max-width:330px;width:100%}
+footer{padding:9px 14px;text-align:center;color:#8da4c1;font-size:11px;background:#0b1320}
+@media(min-width:650px){.characters{grid-template-columns:repeat(3,minmax(0,1fr))}#stickArea{width:145px;height:145px}#stick{left:42px;top:42px}}
+</style>
+</head>
+<body>
+<div id="app">
+<header><div class="logo">⚡ BRAWL ARENA</div><div class="small">WEB PROTOTYPE</div></header>
+<section id="menu">
+  <div><div class="small">ORIGINAL MULTIPLAYER BRAWLER / PHASE 1</div><h1>戦場へ、<br>飛び込もう。</h1><p class="small">移動・通常攻撃・必殺技を試せる試作版です。現在は練習用の敵とのバトルです。</p></div>
+  <div class="panel">
+    <div class="row" style="justify-content:space-between"><h2>プレイヤーデータ</h2><div>🪙 <span id="coins">500</span></div></div>
+    <div class="small">この試作版では選択キャラとコインをこの端末に保存します。</div>
+  </div>
+  <div><h2>キャラクターを選ぶ</h2><div id="characters" class="characters"></div></div>
+  <button id="play" class="primary">▶ バトル開始</button>
+  <div class="panel"><h2>次の開発段階</h2><div class="small">① バトル操作 → ② アカウント・クラウド保存 → ③ リアルタイムオンライン対戦。オンライン対戦にはサーバー設定が必要です。</div></div>
+</section>
+<section id="game">
+  <canvas id="arena"></canvas>
+  <div class="hud">
+    <div class="hudbox"><div id="heroName">SPARK</div><div id="healthbar"><div id="healthfill"></div></div><div id="healthtext">HP 100/100</div></div>
+    <div class="hudbox" style="text-align:right">撃破 <b id="kills">0</b><br><span id="supertext">必殺技 0%</span></div>
+  </div>
+  <div id="controls">
+    <div id="stickArea"><div id="stick"></div></div>
+    <div class="actions"><button id="attack" class="action">攻撃</button><button id="super" class="action" disabled>必殺技</button></div>
+  </div>
+  <div id="toast"></div>
+  <div id="gameover"><div class="panel"><h2 id="resultTitle">バトル終了</h2><p id="resultText">練習おつかれ！</p><button id="back">キャラ選択へ戻る</button></div></div>
+</section>
+<footer>オリジナル試作版 • オンライン対戦は次の段階で実装</footer>
+</div>
+<script>
+const defs=[
+ {id:'spark',name:'スパーク',emoji:'⚡',color:'#ffca45',hp:100,damage:18,rate:360,cost:0,desc:'バランス型 / 電撃ショット'},
+ {id:'moss',name:'モス',emoji:'🌿',color:'#59d59b',hp:135,damage:13,rate:420,cost:250,desc:'タフ型 / 高い体力'},
+ {id:'nova',name:'ノヴァ',emoji:'🌟',color:'#9c83ff',hp:85,damage:25,rate:520,cost:400,desc:'高火力型 / 少し紙装甲'},
+ {id:'blaze',name:'ブレイズ',emoji:'🔥',color:'#ff795d',hp:110,damage:16,rate:390,cost:600,desc:'突撃型 / 扱いやすい'}
+];
+const $=id=>document.getElementById(id);
+let saved={coins:500,unlocked:['spark'],selected:'spark'};
+try{const s=JSON.parse(localStorage.getItem('brawlArenaSaveV1')||'null');if(s)saved={...saved,...s};}catch(e){}
+function save(){localStorage.setItem('brawlArenaSaveV1',JSON.stringify(saved));}
+let chosen=defs.find(c=>c.id===saved.selected)||defs[0];
+function renderChars(){
+ $('coins').textContent=saved.coins;
+ $('characters').innerHTML='';
+ defs.forEach(c=>{
+  const unlocked=saved.unlocked.includes(c.id),selected=c.id===chosen.id;
+  const b=document.createElement('button');b.className='char'+(selected?' selected':'');
+  b.innerHTML=`<div class="avatar" style="background:${c.color}22;border-color:${c.color};color:${c.color}">${c.emoji}</div><strong>${c.name} ${selected?'✓':''}</strong><small>${c.desc}</small><small>HP ${c.hp} ・ 攻撃 ${c.damage}</small><small>${unlocked?'解放済み':`🪙 ${c.cost} で解放`}</small>`;
+  b.onclick=()=>{if(!unlocked){if(saved.coins<c.cost){alert('コインが足りません！');return;}saved.coins-=c.cost;saved.unlocked.push(c.id);saved.selected=c.id;chosen=c;save();renderChars();return;}chosen=c;saved.selected=c.id;save();renderChars();};
+  $('characters').appendChild(b);
+ });
+}
+renderChars();
+$('play').onclick=()=>startGame();
+const canvas=$('arena'),ctx=canvas.getContext('2d');
+let W=800,H=600,player,enemies=[],bullets=[],particles=[],running=false,last=0,spawnTimer=0,kills=0,superCharge=0,joy={x:0,y:0},keys={},attackHeld=false;
+const walls=[{x:.23,y:.22,w:.12,h:.12},{x:.62,y:.18,w:.15,h:.09},{x:.43,y:.43,w:.14,h:.13},{x:.16,y:.68,w:.18,h:.09},{x:.70,y:.68,w:.13,h:.13}];
+function resize(){const r=canvas.getBoundingClientRect();const d=Math.min(devicePixelRatio||1,2);canvas.width=Math.max(1,Math.floor(r.width*d));canvas.height=Math.max(1,Math.floor(r.height*d));ctx.setTransform(d,0,0,d,0,0);W=r.width;H=r.height;}
+function startGame(){
+ $('menu').style.display='none';$('game').style.display='block';$('gameover').style.display='none';resize();
+ player={x:W*.5,y:H*.55,r:17,hp:chosen.hp,maxHp:chosen.hp,speed:185,angle:0,invuln:0};
+ enemies=[];bullets=[];particles=[];kills=0;superCharge=0;spawnTimer=0;running=true;
+ $('heroName').textContent=chosen.name;$('kills').textContent='0';$('super').disabled=true;
+ for(let i=0;i<3;i++)spawnEnemy();last=performance.now();requestAnimationFrame(loop);
+}
+function spawnEnemy(){if(enemies.length>=6)return;let edge=Math.floor(Math.random()*4),x=edge===0?20:edge===1?W-20:Math.random()*W,y=edge===2?20:edge===3?H-20:Math.random()*H;enemies.push({x,y,r:15,hp:42,maxHp:42,speed:48+Math.random()*20,shot:Math.random()*1.5});}
+function collides(x,y,r){for(const w of walls){const a={x:w.x*W,y:w.y*H,w:w.w*W,h:w.h*H};const px=Math.max(a.x,Math.min(x,a.x+a.w)),py=Math.max(a.y,Math.min(y,a.y+a.h));if((x-px)**2+(y-py)**2<r*r)return true;}return false;}
+function moveBody(o,dx,dy){let nx=Math.max(o.r,Math.min(W-o.r,o.x+dx));if(!collides(nx,o.y,o.r))o.x=nx;let ny=Math.max(o.r,Math.min(H-o.r,o.y+dy));if(!collides(o.x,ny,o.r))o.y=ny;}
+function fire(isSuper=false){
+ if(!running||!player)return;
+ let target=null,dist=Infinity;
+ for(const e of enemies){const d=Math.hypot(e.x-player.x,e.y-player.y);if(d<dist){dist=d;target=e;}}
+ if(target){player.angle=Math.atan2(target.y-player.y,target.x-player.x);}
+ const angle=player.angle;
+ if(isSuper){if(superCharge<100)return;superCharge=0;for(let i=0;i<12;i++){const a=i*Math.PI*2/12;bullets.push({x:player.x,y:player.y,vx:Math.cos(a)*270,vy:Math.sin(a)*270,r:7,damage:chosen.damage*1.5,life:.8,super:true});}toast('必殺技！');}
+ else{bullets.push({x:player.x+Math.cos(angle)*20,y:player.y+Math.sin(angle)*20,vx:Math.cos(angle)*430,vy:Math.sin(angle)*430,r:6,damage:chosen.damage,life:.8});}
+}
+function toast(t){$('toast').textContent=t;$('toast').style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('toast').style.display='none',850);}
+function loop(now){if(!running)return;const dt=Math.min((now-last)/1000,.04);last=now;update(dt);draw();requestAnimationFrame(loop);}
+function update(dt){
+ if(!player)return;
+ const k=keys;let dx=joy.x+(k.ArrowRight||k.d?1:0)-(k.ArrowLeft||k.a?1:0),dy=joy.y+(k.ArrowDown||k.s?1:0)-(k.ArrowUp||k.w?1:0);const m=Math.hypot(dx,dy);if(m>1){dx/=m;dy/=m;}
+ if(m>.05){player.angle=Math.atan2(dy,dx);moveBody(player,dx*player.speed*dt,dy*player.speed*dt);}
+ player.invuln=Math.max(0,player.invuln-dt);
+ spawnTimer+=dt;if(spawnTimer>2.1){spawnTimer=0;spawnEnemy();}
+ enemies.forEach(e=>{
+  const a=Math.atan2(player.y-e.y,player.x-e.x),d=Math.hypot(player.x-e.x,player.y-e.y);
+  if(d>37)moveBody(e,Math.cos(a)*e.speed*dt,Math.sin(a)*e.speed*dt);
+  e.shot-=dt;if(d<220&&e.shot<=0){e.shot=1.25+Math.random();bullets.push({x:e.x,y:e.y,vx:Math.cos(a)*190,vy:Math.sin(a)*190,r:5,damage:8,life:1.6,enemy:true});}
+  if(d<player.r+e.r+1&&player.invuln<=0){player.hp-=12;player.invuln=.6;updateHealth();}
+ });
+ bullets.forEach(b=>{b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;});
+ bullets=bullets.filter(b=>{
+  if(b.life<=0||b.x<0||b.x>W||b.y<0||b.y>H)return false;
+  if(!b.enemy){for(const e of enemies){if(Math.hypot(e.x-b.x,e.y-b.y)<e.r+b.r){e.hp-=b.damage;superCharge=Math.min(100,superCharge+ (b.super?5:12));if(e.hp<=0){kills++;saved.coins+=15;save();$('kills').textContent=kills;particles.push({x:e.x,y:e.y,t:.35});}return false;}}}
+  else if(Math.hypot(player.x-b.x,player.y-b.y)<player.r+b.r&&player.invuln<=0){player.hp-=b.damage;player.invuln=.5;updateHealth();return false;}
+  return true;
+ });
+ enemies=enemies.filter(e=>e.hp>0);
+ particles.forEach(p=>p.t-=dt);particles=particles.filter(p=>p.t>0);
+ $('supertext').textContent=`必殺技 ${Math.floor(superCharge)}%`;$('super').disabled=superCharge<100;
+ if(player.hp<=0){running=false;$('gameover').style.display='flex';$('resultTitle').textContent='バトル終了';$('resultText').textContent=`撃破 ${kills}体！ コインを獲得しました。`;saved.coins+=25;save();}
+}
+function updateHealth(){const p=Math.max(0,player.hp/player.maxHp*100);$('healthfill').style.width=p+'%';$('healthtext').textContent=`HP ${Math.max(0,Math.ceil(player.hp))}/${player.maxHp}`;}
+function draw(){
+ ctx.clearRect(0,0,W,H);ctx.fillStyle='#315d48';ctx.fillRect(0,0,W,H);
+ ctx.strokeStyle='#ffffff0b';ctx.lineWidth=1;for(let x=0;x<W;x+=32){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}for(let y=0;y<H;y+=32){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+ walls.forEach(w=>{const x=w.x*W,y=w.y*H,ww=w.w*W,hh=w.h*H;ctx.fillStyle='#203d45';ctx.fillRect(x+3,y+5,ww,hh);ctx.fillStyle='#718a7b';ctx.fillRect(x,y,ww,hh);ctx.fillStyle='#91a99a';ctx.fillRect(x+3,y+3,ww-6,5);});
+ enemies.forEach(e=>{ctx.fillStyle='#e85d69';ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(e.x-4,e.y-3,3,0,Math.PI*2);ctx.arc(e.x+4,e.y-3,3,0,Math.PI*2);ctx.fill();ctx.fillStyle='#38222b';ctx.fillRect(e.x-17,e.y-24,34,4);ctx.fillStyle='#ff8790';ctx.fillRect(e.x-17,e.y-24,34*Math.max(0,e.hp/e.maxHp),4);});
+ bullets.forEach(b=>{ctx.fillStyle=b.enemy?'#ff9b9b':(b.super?'#d9a7ff':'#ffe27a');ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();});
+ particles.forEach(p=>{ctx.globalAlpha=Math.max(0,p.t/.35);ctx.fillStyle='#ffe27a';ctx.beginPath();ctx.arc(p.x,p.y,22*(1-p.t/.35),0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;});
+ if(player){ctx.save();ctx.translate(player.x,player.y);ctx.rotate(player.angle);ctx.fillStyle='#101a2a';ctx.fillRect(1,-6,25,12);ctx.fillStyle=chosen.color;ctx.beginPath();ctx.arc(0,0,player.r,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(6,-5,4,0,Math.PI*2);ctx.arc(6,5,4,0,Math.PI*2);ctx.fill();ctx.restore();if(player.invuln>0){ctx.strokeStyle='#ffffffaa';ctx.lineWidth=3;ctx.beginPath();ctx.arc(player.x,player.y,player.r+5,0,Math.PI*2);ctx.stroke();}}
+ updateHealth();
+}
+const stickArea=$('stickArea'),stick=$('stick');let pointer=null;
+function setJoy(e){const r=stickArea.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let dx=e.clientX-cx,dy=e.clientY-cy,dist=Math.hypot(dx,dy),max=42;if(dist>max){dx=dx/dist*max;dy=dy/dist*max;}joy={x:dx/max,y:dy/max};stick.style.left=(r.width/2-27+dx)+'px';stick.style.top=(r.height/2-27+dy)+'px';}
+function resetJoy(){pointer=null;joy={x:0,y:0};stick.style.left='calc(50% - 27px)';stick.style.top='calc(50% - 27px)';}
+stickArea.addEventListener('pointerdown',e=>{pointer=e.pointerId;stickArea.setPointerCapture(pointer);setJoy(e);});
+stickArea.addEventListener('pointermove',e=>{if(pointer===e.pointerId)setJoy(e);});
+stickArea.addEventListener('pointerup',resetJoy);stickArea.addEventListener('pointercancel',resetJoy);
+$('attack').addEventListener('pointerdown',e=>{e.preventDefault();fire(false);});
+$('super').addEventListener('pointerdown',e=>{e.preventDefault();fire(true);});
+window.addEventListener('keydown',e=>{keys[e.key]=true;if(e.key===' '){e.preventDefault();fire(false);}if(e.key==='Shift')fire(true);});
+window.addEventListener('keyup',e=>keys[e.key]=false);
+$('back').onclick=()=>{running=false;$('game').style.display='none';$('menu').style.display='flex';renderChars();};
+window.addEventListener('resize',()=>{if($('game').style.display==='block'){resize();if(player){player.x=Math.min(W-player.r,Math.max(player.r,player.x));player.y=Math.min(H-player.r,Math.max(player.r,player.y));}}});
+</script>
+</body>
+</html>
