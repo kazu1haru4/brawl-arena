@@ -71,6 +71,18 @@ function startWaitingMatch() {
   if (!waiting.length) return;
   const humans = waiting.slice(0, ROOM_SIZE);
   for (const ws of humans) removeFromQueue(ws);
+
+  // One human only: don't create an online room or server-side bot placeholders.
+  // Tell that client to start its existing local BOT survival match instead.
+  if (humans.length === 1) {
+    const ws = humans[0];
+    ws.queuePlayer = null;
+    send(ws, { type: 'localBotMatch', reason: 'only-one-human' });
+    console.log('Only one human found; switching to local BOT match.');
+    return;
+  }
+
+  // Two or more humans keep the normal online match flow.
   makeRoom(humans);
 }
 let queueTimer = null;
