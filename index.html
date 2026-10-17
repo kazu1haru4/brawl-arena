@@ -22,10 +22,59 @@
       <button class="primary full" type="submit" id="submitBtn">アカウントを作成</button>
     </form>
     <p id="message" class="message" role="status"></p>
-    <p class="fineprint">試作版：アカウント情報はこのブラウザ内だけに保存されます。別端末との同期や安全な本番認証はまだ未対応です。</p>
+    <p class="fineprint">アカウントはサーバーに保存されます。パスワードそのものは保存せず、安全な形式で管理します。</p>
   </section>
 </main>
 <script>
-(()=>{const $=id=>document.getElementById(id);let mode='register';const usersKey='ba_demo_users',sessionKey='ba_demo_session';function setMode(m){mode=m;$('registerTab').classList.toggle('active',m==='register');$('loginTab').classList.toggle('active',m==='login');$('formTitle').textContent=m==='register'?'アカウント登録':'ログイン';$('submitBtn').textContent=m==='register'?'アカウントを作成':'ログイン';$('password').autocomplete=m==='register'?'new-password':'current-password';$('message').textContent=''}$('registerTab').onclick=()=>setMode('register');$('loginTab').onclick=()=>setMode('login');function getUsers(){try{return JSON.parse(localStorage.getItem(usersKey)||'{}')}catch{return {}}}$('authForm').onsubmit=e=>{e.preventDefault();const id=$('playerId').value.trim(),pw=$('password').value;if(!/^[a-zA-Z0-9_]{3,18}$/.test(id)){$('message').textContent='IDは英数字と_で3〜18文字にしてね';return}if(pw.length<8){$('message').textContent='パスワードは8文字以上にしてね';return}const users=getUsers(),key=id.toLowerCase();if(mode==='register'){if(users[key]){$('message').textContent='そのIDは使用済みだよ';return}users[key]={id,password:pw,tutorialDone:false};localStorage.setItem(usersKey,JSON.stringify(users));localStorage.setItem(sessionKey,id);location.href='tutorial.html'}else{if(!users[key]||users[key].password!==pw){$('message').textContent='IDかパスワードが違うよ';return}localStorage.setItem(sessionKey,users[key].id);location.href=users[key].tutorialDone?'home.html':'tutorial.html'}};const current=localStorage.getItem(sessionKey);if(current){location.href='home.html'}})();
+(()=>{
+  const $=id=>document.getElementById(id);
+  let mode='register';
+  const API_BASE='https://brawl-arena-wkby.onrender.com';
+  const tokenKey='ba_auth_token';
+  const userKey='ba_current_user';
+  function setMode(m){
+    mode=m;
+    $('registerTab').classList.toggle('active',m==='register');
+    $('loginTab').classList.toggle('active',m==='login');
+    $('formTitle').textContent=m==='register'?'アカウント登録':'ログイン';
+    $('submitBtn').textContent=m==='register'?'アカウントを作成':'ログイン';
+    $('password').autocomplete=m==='register'?'new-password':'current-password';
+    $('message').textContent='';
+  }
+  $('registerTab').onclick=()=>setMode('register');
+  $('loginTab').onclick=()=>setMode('login');
+  async function api(path,body,token){
+    const headers={'Content-Type':'application/json'};
+    if(token)headers.Authorization='Bearer '+token;
+    const response=await fetch(API_BASE+path,{method:body?'POST':'GET',headers,body:body?JSON.stringify(body):undefined});
+    let data={};try{data=await response.json()}catch{}
+    if(!response.ok)throw new Error(data.message||'通信に失敗しました。');
+    return data;
+  }
+  function saveLogin(data){
+    localStorage.setItem(tokenKey,data.token);
+    localStorage.setItem(userKey,JSON.stringify(data.user));
+  }
+  $('authForm').onsubmit=async e=>{
+    e.preventDefault();
+    const id=$('playerId').value.trim().toLowerCase();
+    const pw=$('password').value;
+    if(!/^[a-z0-9_]{3,20}$/.test(id)){$('message').textContent='IDは英小文字・数字・_ の3〜20文字にしてね';return}
+    if(pw.length<8||pw.length>128){$('message').textContent='パスワードは8〜128文字にしてね';return}
+    const btn=$('submitBtn');btn.disabled=true;btn.textContent='処理中…';$('message').textContent='';
+    try{
+      const data=await api(mode==='register'?'/api/register':'/api/login',{userId:id,password:pw});
+      saveLogin(data);$('password').value='';$('message').textContent='ログイン成功！移動するよ…';
+      setTimeout(()=>location.href=mode==='register'?'tutorial.html':'home.html',350);
+    }catch(err){$('message').textContent=err.message||'接続できませんでした。少し待って再試行してね。'}
+    finally{btn.disabled=false;btn.textContent=mode==='register'?'アカウントを作成':'ログイン';}
+  };
+  async function restoreSession(){
+    const token=localStorage.getItem(tokenKey);if(!token)return;
+    try{const data=await api('/api/me',null,token);localStorage.setItem(userKey,JSON.stringify(data.user));location.replace('home.html');}
+    catch{localStorage.removeItem(tokenKey);localStorage.removeItem(userKey);}
+  }
+  restoreSession();
+})();
 </script>
 </body></html>
