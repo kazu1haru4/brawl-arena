@@ -1,0 +1,17 @@
+{
+  "id": "./home.html",
+  "name": "BRAWL ARENA",
+  "short_name": "BRAWL ARENA",
+  "description": "バトルと練習を楽しもう！",
+  "lang": "ja",
+  "start_url": "./home.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#101327",
+  "theme_color": "#11132b",
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
