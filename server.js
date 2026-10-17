@@ -62,6 +62,67 @@ const server = http.createServer(async (req, res) => {
         return reply(200, { ok:true, token, user:{ userId:user.userId, displayName:user.displayName } });
       }
       const auth = String(req.headers.authorization || '');
+      const tokenMatch = auth.match(/^Bearer ([a-f0-9]{64})$/i);
+      const protectedFriendPath = url.pathname.startsWith('/api/friends') || /^\/api\/users\//.test(url.pathname);
+      let friendSession = null;
+      if (protectedFriendPath) {
+        if (!tokenMatch) return reply(401, { ok:false, error:'unauthorized', message:'ログインし直してください。' });
+        const tokenHash = crypto.createHash('sha256').update(tokenMatch[1]).digest('hex');
+        friendSession = await db.collection('sessions').findOne({ tokenHash, expiresAt: { $gt: new Date() } });
+        if (!friendSession) return reply(401, { ok:false, error:'unauthorized', message:'ログインし直してください。' });
+      }
+      if (req.method === 'GET' && /^\/api\/users\/[a-z0-9_]{3,20}$/i.test(url.pathname)) {
+        const targetId = decodeURIComponent(url.pathname.split('/').pop()).toLowerCase();
+        if (targetId === friendSession.userId) return reply(400, {ok:false,error:'self_request',message:'自分自身は検索できません。'});
+        const user = await db.collection('users').findOne({ userId: targetId }, { projection:{ _id:0, userId:1, displayName:1 } });
+        if (!user) return reply(404, {ok:false,error:'user_not_found',message:'そのユーザーIDは見つかりません。'});
+        return reply(200, {ok:true,user});
+      }
+      if (req.method === 'POST' && url.pathname === '/api/friends/request') {
+        const body = await readBody();
+        const targetId = String(body.userId || '').trim().toLowerCase();
+        const fromId = friendSession.userId;
+        if (!/^[a-z0-9_]{3,20}$/.test(targetId)) return reply(400,{ok:false,error:'invalid_user_id',message:'ユーザーIDを確認してください。'});
+        if (targetId === fromId) return reply(400,{ok:false,error:'self_request',message:'自分自身には申請できません。'});
+        const target = await db.collection('users').findOne({userId:targetId},{projection:{_id:0,userId:1}});
+        if (!target) return reply(404,{ok:false,error:'user_not_found',message:'そのユーザーIDは見つかりません。'});
+        const pairKey = [fromId,targetId].sort().join(':');
+        const friends = db.collection('friendships');
+        const existing = await friends.findOne({pairKey});
+        if (existing) return reply(409,{ok:false,error:'relationship_exists',message:existing.status==='accepted'?'すでにフレンドです。':'申請済み、または相手から申請が届いています。'});
+        try { await friends.insertOne({pairKey,userA:fromId,userB:targetId,requestedBy:fromId,status:'pending',createdAt:new Date(),updatedAt:new Date()}); }
+        catch (e) { if (e.code === 11000) return reply(409,{ok:false,error:'relationship_exists',message:'申請済み、またはすでにフレンドです。'}); throw e; }
+        return reply(201,{ok:true,message:'フレンド申請を送信したよ！'});
+      }
+      if (req.method === 'GET' && url.pathname === '/api/friends/requests') {
+        const rows = await db.collection('friendships').find({status:'pending',userB:friendSession.userId,requestedBy:{$ne:friendSession.userId}}).sort({createdAt:-1}).toArray();
+        const ids = rows.map(r=>r.requestedBy);
+        const users = ids.length ? await db.collection('users').find({userId:{$in:ids}},{projection:{_id:0,userId:1,displayName:1}}).toArray() : [];
+        const byId = new Map(users.map(u=>[u.userId,u]));
+        return reply(200,{ok:true,requests:rows.map(r=>({user:byId.get(r.requestedBy)||{userId:r.requestedBy,displayName:r.requestedBy},createdAt:r.createdAt}))});
+      }
+      if (req.method === 'POST' && url.pathname === '/api/friends/respond') {
+        const body = await readBody(); const requester = String(body.userId || '').trim().toLowerCase(); const action = String(body.action || '');
+        if (!/^[a-z0-9_]{3,20}$/.test(requester) || !['accept','reject'].includes(action)) return reply(400,{ok:false,error:'invalid_request',message:'申請内容を確認してください。'});
+        const pairKey = [requester,friendSession.userId].sort().join(':');
+        const friends = db.collection('friendships'); const filter = {pairKey,userA:requester,userB:friendSession.userId,requestedBy:requester,status:'pending'};
+        const row = await friends.findOne(filter);
+        if (!row) return reply(404,{ok:false,error:'request_not_found',message:'その申請は見つかりません。'});
+        if (action === 'accept') {
+          const result = await friends.updateOne(filter,{$set:{status:'accepted',updatedAt:new Date(),acceptedAt:new Date()}});
+          if (!result.modifiedCount) return reply(409,{ok:false,error:'request_changed',message:'申請状態が変わりました。更新してね。'});
+          return reply(200,{ok:true,message:'フレンド承認したよ！'});
+        }
+        await friends.deleteOne(filter); return reply(200,{ok:true,message:'申請を拒否したよ。'});
+      }
+      if (req.method === 'GET' && url.pathname === '/api/friends') {
+        const me = friendSession.userId;
+        const rows = await db.collection('friendships').find({status:'accepted',$or:[{userA:me},{userB:me}]}).sort({updatedAt:-1}).toArray();
+        const ids = rows.map(r=>r.userA===me?r.userB:r.userA);
+        const users = ids.length ? await db.collection('users').find({userId:{$in:ids}},{projection:{_id:0,userId:1,displayName:1}}).toArray() : [];
+        const byId = new Map(users.map(u=>[u.userId,u]));
+        return reply(200,{ok:true,friends:ids.map(userId=>byId.get(userId)||{userId,displayName:userId})});
+      }
       if (auth.startsWith('Bearer ') && (req.method === 'GET' && url.pathname === '/api/me' || req.method === 'POST' && url.pathname === '/api/logout')) {
         const tokenHash = crypto.createHash('sha256').update(auth.slice(7)).digest('hex');
         const sessions = db.collection('sessions'); const session = await sessions.findOne({ tokenHash, expiresAt: { $gt: new Date() } });
@@ -211,7 +272,7 @@ const heartbeat = setInterval(() => { for (const ws of sockets) { if (!ws.isAliv
 server.listen(PORT, async () => {
   console.log(`BRAWL ARENA server listening on ${PORT}`);
   if (!process.env.MONGODB_URI) { console.warn('MONGODB_URI is missing. WebSocket matchmaking runs, but MongoDB persistence is disabled.'); return; }
-  try { mongo = new MongoClient(process.env.MONGODB_URI); await mongo.connect(); db = mongo.db(process.env.DB_NAME || 'brawl_arena'); await db.collection('matches').createIndex({ roomId: 1 }, { unique: true }); await db.collection('matches').createIndex({ createdAt: -1 }); await db.collection('users').createIndex({ userId: 1 }, { unique: true }); await db.collection('sessions').createIndex({ tokenHash: 1 }, { unique: true }); await db.collection('sessions').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }); console.log('MongoDB Atlas connected.'); }
+  try { mongo = new MongoClient(process.env.MONGODB_URI); await mongo.connect(); db = mongo.db(process.env.DB_NAME || 'brawl_arena'); await db.collection('matches').createIndex({ roomId: 1 }, { unique: true }); await db.collection('matches').createIndex({ createdAt: -1 }); await db.collection('users').createIndex({ userId: 1 }, { unique: true }); await db.collection('sessions').createIndex({ tokenHash: 1 }, { unique: true }); await db.collection('sessions').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }); await db.collection('friendships').createIndex({ pairKey: 1 }, { unique: true }); await db.collection('friendships').createIndex({ userB: 1, status: 1, createdAt: -1 }); console.log('MongoDB Atlas connected.'); }
   catch (e) { console.error('MongoDB Atlas connection failed:', e.message); }
 });
 function shutdown() { clearInterval(heartbeat); for (const ws of sockets) ws.close(1001, 'server shutdown'); server.close(async () => { if (mongo) await mongo.close(); process.exit(0); }); }
