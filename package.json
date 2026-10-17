@@ -1,8 +1,8 @@
-{
+ {
   "name": "brawl-arena-online-server",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
-  "description": "BRAWL ARENA WebSocket matchmaking and realtime presence server",
+  "description": "BRAWL ARENA API and WebSocket matchmaking server",
   "main": "server.js",
   "scripts": { "start": "node server.js" },
   "engines": { "node": ">=20" },
