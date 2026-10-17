@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "defaultCharacterId": "teleporter",
+  "characters": [
+    {
+      "id": "teleporter",
+      "name": "テレポーター",
+      "image": "",
+      "maxHp": 4800,
+      "moveSpeed": 185,
+      "attackDamage": 1400,
+      "attackRange": 420,
+      "projectileSpeed": 420,
+      "superDamage": 2300,
+      "superProjectileSpeed": 350,
+      "radius": 17,
+      "gadget": {
+        "type": "heal",
+        "amount": 800,
+        "cooldown": 8,
+        "name": "グラビティハンド"
+      },
+      "super": {
+        "type": "teleport",
+        "cooldown": 7,
+        "name": "ワープ"
+      },
+      "hypercharge": {
+        "enabled": true,
+        "name": "ハイパーチャージ"
+      }
+    }
+  ]
+}
