@@ -42,8 +42,21 @@ if(hp<=0)finish(false);else if(alive<=1)finish(true);else if(elapsed>=120)finish
 function finish(won){if(ended)return;ended=true;move={x:0,y:0};$('overlay').style.display='flex';$('resultTitle').textContent=won?'🏆 チャンピオン！':'💥 試合終了';$('resultText').textContent=`撃破 ${kills}人 / パワー ${power}。${won?'最後まで生き残った！':'次はもっと長く生き残ろう！'}`;try{let q=JSON.parse(localStorage.getItem('ba_progress')||'{"coins":0,"trophies":0,"wins":0,"matches":0}');q.coins=(q.coins||0)+(won?80:15);q.trophies=Math.max(0,(q.trophies||0)+(won?6:0));q.wins=(q.wins||0)+(won?1:0);q.matches=(q.matches||0)+1;localStorage.setItem('ba_progress',JSON.stringify(q))}catch{}}
 function circle(x,y,r,fill,stroke){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=2;ctx.stroke()}}
 function draw(){ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,viewW,viewH);ctx.save();ctx.translate(-camX,-camY);ctx.fillStyle='#8a6248';ctx.fillRect(0,0,W,H);ctx.strokeStyle='#a77a59';ctx.lineWidth=1;for(let x=0;x<W;x+=34)for(let y=0;y<H;y+=34)ctx.strokeRect(x,y,34,34);
-// Walls block movement and create lanes, just like a battle arena.
-for(const o of walls){ctx.fillStyle='#6c4b3b';ctx.fillRect(o.x,o.y,o.w,o.h);ctx.fillStyle='#99715a';ctx.fillRect(o.x+3,o.y+3,o.w-6,7);ctx.strokeStyle='#3c2d2b';ctx.lineWidth=3;ctx.strokeRect(o.x,o.y,o.w,o.h);}
+// Walls: high-contrast stone blocks with a thick outline and visible brick seams.
+for(const o of walls){
+  // Ground shadow makes the wall stand out from the arena floor.
+  ctx.fillStyle='rgba(20,18,30,.38)';ctx.fillRect(o.x+5,o.y+6,o.w,o.h);
+  ctx.fillStyle='#d1d5df';ctx.fillRect(o.x,o.y,o.w,o.h);
+  // Bright top edge and darker front edge give the blocks a raised look.
+  ctx.fillStyle='#f4f6ff';ctx.fillRect(o.x+2,o.y+2,o.w-4,7);
+  ctx.fillStyle='#929bad';ctx.fillRect(o.x+2,o.y+o.h-8,o.w-4,6);
+  ctx.strokeStyle='#34394f';ctx.lineWidth=4;ctx.strokeRect(o.x+1,o.y+1,o.w-2,o.h-2);
+  // Stone seams, kept inside the outline.
+  ctx.strokeStyle='#7b8498';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(o.x+4,o.y+o.h*.52);ctx.lineTo(o.x+o.w-4,o.y+o.h*.52);
+  ctx.moveTo(o.x+o.w*.34,o.y+4);ctx.lineTo(o.x+o.w*.34,o.y+o.h*.52);
+  ctx.moveTo(o.x+o.w*.68,o.y+o.h*.52);ctx.lineTo(o.x+o.w*.68,o.y+o.h-4);ctx.stroke();
+}
 // Bushes are visible grass patches that can be used as cover.
 for(const b of bushes){ctx.fillStyle='#267544';ctx.fillRect(b.x,b.y,b.w,b.h);ctx.fillStyle='#3b9a55';for(let gx=b.x+5;gx<b.x+b.w-3;gx+=12)for(let gy=b.y+5;gy<b.y+b.h-3;gy+=12){ctx.beginPath();ctx.arc(gx,gy,4,0,Math.PI*2);ctx.fill();}}
 for(let i=0;i<14;i++){let xx=(i*83+25)%W,yy=(i*57+75)%(H-80);ctx.fillStyle=i%2?'#276d4a':'#317e50';ctx.fillRect(xx,yy,24,22);circle(xx+12,yy+8,5,'#55b86c')}
