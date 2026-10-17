@@ -26,6 +26,15 @@ else {
     ws.addEventListener('message',event=>{
       let msg;try{msg=JSON.parse(event.data)}catch{return}
       if(msg.type==='queued'){setStatus(`対戦相手を検索中…（待機 ${msg.position||1}人目）`);setProgress(24)}
+      if(msg.type==='localBotMatch'){
+        done=true;clearInterval(progressTimer);clearTimeout(queueTimer);setProgress(100);
+        setStatus('対戦相手が見つからなかったため、オフラインBOT戦を開始します！');
+        document.querySelector('.spinner').style.display='none';
+        document.querySelector('.note').textContent='この試合ではオンライン接続を使いません。';
+        try{ws.close(1000,'switching to local BOT match')}catch{}
+        setTimeout(()=>location.href='survival.html?mode=bot',700);
+        return;
+      }
       if(msg.type==='matched'){
         done=true;clearInterval(progressTimer);setProgress(100);setStatus('マッチ成立！バトル画面へ移動します…');showPlayers(msg.players);
         const q=new URLSearchParams({room:msg.roomId,player:msg.playerId,online:'1'});
