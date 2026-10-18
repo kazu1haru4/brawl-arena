@@ -29,6 +29,38 @@
         "enabled": true,
         "name": "ハイパーチャージ"
       }
+    },
+    {
+      "id": "rush",
+      "name": "ラッシュ",
+      "image": "",
+      "maxHp": 7200,
+      "moveSpeed": 220,
+      "attackDamage": 900,
+      "attackRange": 115,
+      "projectileSpeed": 0,
+      "superDamage": 1200,
+      "superProjectileSpeed": 0,
+      "radius": 18,
+      "gadget": {
+        "type": "healOnHit",
+        "amount": 120,
+        "cooldown": 0,
+        "name": "アグレッシブ"
+      },
+      "super": {
+        "type": "jump",
+        "cooldown": 8,
+        "name": "ジャンプ",
+        "directional": true,
+        "landingDamage": 1200,
+        "speedBoostDuration": 2,
+        "speedBoostMultiplier": 1.25
+      },
+      "hypercharge": {
+        "enabled": false,
+        "name": "ハイパーチャージ"
+      }
     }
   ]
 }
