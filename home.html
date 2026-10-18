@@ -128,4 +128,3 @@ $('closeInstallHelp').onclick=hideInstallHelp;$('installHelpOk').onclick=hideIns
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(err=>console.warn('Service worker registration failed',err)))}
 renderStats();renderFriends();renderPass()})();
 </script></body></html>
-
