@@ -15,20 +15,26 @@
       "superProjectileSpeed": 350,
       "radius": 17,
       "gadget": {
-        "type": "heal",
-        "amount": 800,
+        "type": "pull",
+        "amount": 350,
         "cooldown": 8,
-        "name": "グラビティハンド"
+        "name": "グラビティハンド",
+        "range": 300
       },
       "super": {
         "type": "teleport",
         "cooldown": 7,
-        "name": "ワープ"
+        "name": "ワープ",
+        "distance": 130,
+        "portalLifetime": 7
       },
       "hypercharge": {
         "enabled": true,
         "name": "ハイパーチャージ"
-      }
+      },
+      "attackCooldown": 0.32,
+      "ammo": 3,
+      "reloadTime": 0.85
     },
     {
       "id": "rush",
@@ -45,8 +51,9 @@
       "gadget": {
         "type": "healOnHit",
         "amount": 120,
-        "cooldown": 0,
-        "name": "アグレッシブ"
+        "cooldown": 8,
+        "name": "アグレッシブ",
+        "duration": 4
       },
       "super": {
         "type": "jump",
@@ -55,12 +62,17 @@
         "directional": true,
         "landingDamage": 1200,
         "speedBoostDuration": 2,
-        "speedBoostMultiplier": 1.25
+        "speedBoostMultiplier": 1.25,
+        "distance": 150,
+        "landingRadius": 85
       },
       "hypercharge": {
         "enabled": false,
         "name": "ハイパーチャージ"
-      }
+      },
+      "attackCooldown": 0.32,
+      "ammo": 3,
+      "reloadTime": 0.85
     }
   ]
 }
