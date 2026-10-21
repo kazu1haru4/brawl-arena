@@ -34,7 +34,23 @@
       },
       "attackCooldown": 0.32,
       "ammo": 3,
-      "reloadTime": 0.85
+      "reloadTime": 0.85,
+      "attack": {
+        "type": "projectile",
+        "damage": 1400,
+        "range": 420,
+        "projectileSpeed": 420,
+        "cooldown": 0.32,
+        "ammo": 3,
+        "reloadTime": 0.85,
+        "projectileRadius": 7
+      },
+      "appearance": {
+        "image": "",
+        "color": "#b48aff",
+        "projectileColor": "#d8a5ff",
+        "radius": 17
+      }
     },
     {
       "id": "rush",
@@ -72,7 +88,23 @@
       },
       "attackCooldown": 0.32,
       "ammo": 3,
-      "reloadTime": 0.85
+      "reloadTime": 0.85,
+      "attack": {
+        "type": "melee",
+        "damage": 900,
+        "range": 115,
+        "projectileSpeed": 0,
+        "cooldown": 0.32,
+        "ammo": 3,
+        "reloadTime": 0.85,
+        "projectileRadius": 0
+      },
+      "appearance": {
+        "image": "",
+        "color": "#ff684d",
+        "projectileColor": "#ff684d",
+        "radius": 18
+      }
     }
   ]
 }
